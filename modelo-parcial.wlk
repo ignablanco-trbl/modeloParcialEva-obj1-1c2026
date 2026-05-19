@@ -28,6 +28,15 @@ object nerv {
   }
   method todosLosPilotosPuedenSincronizar() = pilotos.all({ p => self.algunEvaPuedeSincronizarCon(p) })
   method algunEvaPuedeSincronizarCon(piloto) = evas.any({ e => self.puedenSincronizar(e, piloto) })
+  method promedioDePuntosDeEntrenamiento() {
+    // Usamos sum con un bloque (transformer) y dividimos por el total
+    return pilotos.sum({ p => p.puntosDeEntrenamiento() }) / pilotos.size()
+  }
+
+  method cadaEvaPuedeSerUsadoPorAlgunPiloto() {
+    // Todos los evas deben tener al menos un piloto compatible
+    return evas.all({ e => pilotos.any({ p => self.puedenSincronizar(e, p) }) })
+  }
 }
 
 // Evas
@@ -94,7 +103,7 @@ object eva00 {
 // Pilotos
 
 object asuka {
-  var puntosDeEntrenamiento = 5
+  var property puntosDeEntrenamiento = 5
   var ultimoEvaSincronizado = eva00
 
   method efectoDeSincroCon(eva) { 
@@ -106,7 +115,7 @@ object asuka {
 }
 
 object shinji {
-  var puntosDeEntrenamiento = 2
+  var property puntosDeEntrenamiento = 2
   var estaCansado = false
   const evasSincronizados = []
 
@@ -127,7 +136,7 @@ object shinji {
 }
 
 object rei {
-  var puntosDeEntrenamiento = 0
+  var property puntosDeEntrenamiento = 0
   var cantidadSincros = 0
 
   method efectoDeSincroCon(eva) {

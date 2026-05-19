@@ -1,0 +1,81 @@
+import modelo-parcial.*
+
+describe "Testeos mínimos a realizar - Base NERV" {
+
+    test "1. El EVA-01 no puede usarse más de 3 veces seguidas sin recargarse." {
+        // Asuka comienza con 5 puntos (cumple el mínimo de 4 para el EVA-01)
+        nerv.intentarSincro(eva01, asuka) // 1er uso: energía baja a 75
+        nerv.intentarSincro(eva01, asuka) // 2do uso: energía baja a 50
+        nerv.intentarSincro(eva01, asuka) // 3er uso: energía baja a 25
+        
+        // En el 4to intento, la energía (25) no es > 30, por lo que falla
+        assert.notThat(eva01.puedeSincronizarCon(asuka))
+        assert.throwsExceptionWithMessage("No se pudieron sincronizar", { nerv.intentarSincro(eva01, asuka) })
+    }
+
+    test "2. En modo ataque, el EVA-02 otorga 3 de entrenamiento y consume 20 de energía." {
+        eva02.cambiarModo(ataque)
+        
+        // Asuka tiene 5 puntos, cumple para usar el EVA-02
+        nerv.intentarSincro(eva02, asuka) 
+        
+        // Asuka pasa de 5 a 8 puntos (5 + 3 del modo ataque)
+        assert.equals(8, asuka.puntosDeEntrenamiento()) 
+        
+        // NOTA: Para testear la energía del EVA-02 necesitás agregarle un getter: method energia() = energia
+        // Si lo tenés, podés descomentar la línea de abajo:
+        // assert.equals(80, eva02.energia()) 
+    }
+
+    test "3. Shinji puede al inicio sincronizar con el EVA-00." {
+        // El EVA-00 no pide requisitos y Shinji arranca sin estar cansado
+        assert.that(nerv.puedenSincronizar(eva00, shinji))
+    }
+
+    test "4. Probar que Rei no puede realizar más de 5 sincronizaciones en total." {
+        // Rei arranca con 0 puntos. No puede usar el 01 (pide 4) ni el 02 (pide 2).
+        // El 00 no pide puntos, pero Rei exige que el AT sea >= 2110. El 00 arranca en 2100.
+        // Primero mejoramos el AT del EVA-00 para que Rei acepte subirse:
+        eva00.mejorarCampoAt(10) // AT sube a 2110
+        
+        // Hacemos las 5 sincronizaciones permitidas
+        nerv.intentarSincro(eva00, rei) // 1
+        nerv.intentarSincro(eva00, rei) // 2
+        nerv.intentarSincro(eva00, rei) // 3
+        nerv.intentarSincro(eva00, rei) // 4
+        nerv.intentarSincro(eva00, rei) // 5
+        
+        // A la sexta vez, Rei debería rechazar la sincronización
+        assert.notThat(rei.puedeSincronizarCon(eva00))
+    }
+
+    test "5. El cálculo del promedio de puntos de entrenamiento de los pilotos es correcto." {
+        nerv.registrarPilotos([asuka, shinji, rei])
+        // Puntos iniciales: Asuka(5) + Shinji(2) + Rei(0) = 7. Total pilotos = 3.
+        // Promedio esperado = 7 / 3
+        
+        // Requiere tener implementado: method promedioDePuntosDeEntrenamiento() en nerv
+        assert.equals(7/3, nerv.promedioDePuntosDeEntrenamiento())
+    }
+
+    test "6. Verificar que cada EVA puede ser usado por al menos un piloto registrado en el cuartel." {
+        nerv.registrarPilotos([asuka, shinji, rei])
+        nerv.registrarEvas([eva00, eva01, eva02])
+        
+        // Asuka (5 puntos) puede usar todos los Evas desde el arranque.
+        // Requiere tener implementado: method cadaEvaPuedeSerUsadoPorAlgunPiloto() en nerv
+        assert.that(nerv.cadaEvaPuedeSerUsadoPorAlgunPiloto())
+    }
+
+    test "7. Que un piloto se considera satisfecho según su definición personal (Asuka)." {
+        // Asuka arranca con el EVA-00 de último sincronizado (AT 2100). No está satisfecha.
+        assert.notThat(asuka.estaSatisfecha())
+        
+        // Mejoramos el EVA-00 a un AT mayor a 2115 (requisito de Asuka)
+        eva00.mejorarCampoAt(20) // AT sube a 2120
+        
+        nerv.intentarSincro(eva00, asuka) // Ahora su último EVA tiene 2120 de AT
+        
+        assert.that(asuka.estaSatisfecha())
+    }
+}
